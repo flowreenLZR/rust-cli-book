@@ -1,6 +1,8 @@
 
 use structopt::StructOpt;
 
+use anyhow::{Context, Result as AnyhowResult};
+
 use std::fmt::{Display, Formatter, Result};
 use std::io::BufRead;
 
@@ -36,7 +38,10 @@ struct CustomError(String);
 
 // Option 7.
 // @todo Why isn't "Box" needed anymore?
-fn main() -> std::result::Result<(), CustomError> {
+// fn main() -> std::result::Result<(), CustomError> {
+
+// Option 8.
+fn main() -> AnyhowResult<()> {
     // Use the *from_args* method provided by *derive(StructOpt)"
     // to parse the input arguments.
     let args = Cli::from_args();
@@ -126,9 +131,16 @@ fn main() -> std::result::Result<(), CustomError> {
     // That is unless the custom error implements the "From<"Error_Type">" trait where "Error_Type"
     // is the error type "?" was handling before. This is because "?" expands to code that does
     // error conversions as long as the necessary "From<E>" traits.
-    let file = file.map_err(|err| CustomError(
-        format!("Error reading `{:?}`: {}", args.path, err)
-    ))?;
+    // let file = file.map_err(|err| CustomError(
+    //     format!("Error reading `{:?}`: {}", args.path, err)
+    // ))?;
+    // let buf_reader = std::io::BufReader::new(file);
+
+    // Option 8.
+    // @todo Why "with_context", which is part of "anyhow::Result" can be invoked on "file", which is a "std::io::Result"?
+    // Are there some type conversions being made?
+    let file = file.with_context(
+        || format!("Optoin 8: could not open file: {:?}!", args.path))?;
     let buf_reader = std::io::BufReader::new(file);
 
     for line in buf_reader.lines() {
@@ -137,9 +149,13 @@ fn main() -> std::result::Result<(), CustomError> {
 
         // Option 7.
         // Either this or implement "From<std::io::Error>" for "CustomError".
-        let line = line.map_err(|_| CustomError(
-            format!("Could not read line from file!")
-        ))?;
+        // let line = line.map_err(|_| CustomError(
+        //     format!("Could not read line from file!")
+        // ))?;
+
+        // Option 8.
+        let line = line.with_context(|| format!("Could not read line from file!"))?;
+
         if line.contains(&args.pattern) {
             println!("{}", line);
         }
