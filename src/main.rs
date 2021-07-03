@@ -141,8 +141,10 @@ fn main() -> AnyhowResult<()> {
     // Are there some type conversions being made?
     // No type conversions. "Context", a trait from "anyhow", is implemented by the "anyhow" library
     // for "std::result::Result".
-    // @todo "anyhow" implements "Context" for "std::result::Result" and not for "std::io::Result".
-    //
+    // @todo SOLVED "anyhow" implements "Context" for "std::result::Result" and not for "std::io::Result".
+    // "std::io::Result<T>" is an alias for "std::result::Result<T, std::io::Error". Which means
+    // that the "Context" implementation for "std::result::Result"
+    // also applies to "std::io::Result".
     // This made me realize how cool Rust's Trait system is compared to C++'s inheritance system.
     // The trait system in rust is similar to the "extension" feature of C# in a way.
     let file = file.with_context(
