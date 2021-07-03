@@ -137,8 +137,14 @@ fn main() -> AnyhowResult<()> {
     // let buf_reader = std::io::BufReader::new(file);
 
     // Option 8.
-    // @todo Why "with_context", which is part of "anyhow::Result" can be invoked on "file", which is a "std::io::Result"?
+    // @todo SOLVED Why "with_context", which is part of "anyhow::Context" can be invoked on "file", which is a "std::io::Result"?
     // Are there some type conversions being made?
+    // No type conversions. "Context", a trait from "anyhow", is implemented by the "anyhow" library
+    // for "std::result::Result".
+    // @todo "anyhow" implements "Context" for "std::result::Result" and not for "std::io::Result".
+    //
+    // This made me realize how cool Rust's Trait system is compared to C++'s inheritance system.
+    // The trait system in rust is similar to the "extension" feature of C# in a way.
     let file = file.with_context(
         || format!("Optoin 8: could not open file: {:?}!", args.path))?;
     let buf_reader = std::io::BufReader::new(file);
