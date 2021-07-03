@@ -2,6 +2,7 @@
 use structopt::StructOpt;
 
 use std::fmt::{Display, Formatter, Result};
+use std::io::BufRead;
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt)]
@@ -34,17 +35,32 @@ fn main() {
 
     println!("Cli args struct (display): {}", args);
 
-    /// "read_to_string" returns a "Result" struct which may contain
-    /// an OK value or an Err value.
-    /// "expect" then consumes the "self" object, returning the OK value
-    /// or panicking if the the result is an "Err".
+    // "read_to_string" returns a "Result" struct which may contain
+    // an OK value or an Err value.
+    // "expect" then consumes the "self" object, returning the OK value
+    // or panicking if the the result is an "Err".
     let content = std::fs::read_to_string(&args.path)
         .expect("Could not read the file!");
 
-    /// Iterate over content and match pattern.
+    // Iterate over content and match pattern.
     for line in content.lines() {
         if line.contains(&args.pattern) {
             println!("{}", line);
+        }
+    }
+
+    // Using std::fs::read_to_string is memory expensive because it reads the whole file
+    // into memory.
+    // BufReader should solve that.
+    println!("Doing the same thing only this time using BufReader.");
+
+    let file = std::fs::File::open(&args.path).expect("File could not pe opened!");
+    let buf_reader = std::io::BufReader::new(file);
+
+    for line in buf_reader.lines() {
+        let string = line.expect("Iter invalid");
+        if string.contains(&args.pattern) {
+            println!("{}", string);
         }
     }
 }
