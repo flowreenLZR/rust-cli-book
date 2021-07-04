@@ -4,7 +4,10 @@ use structopt::StructOpt;
 use anyhow::{Context, Result as AnyhowResult};
 
 use std::fmt::{Display, Formatter, Result};
-use std::io::BufRead;
+// @todo Why is `Write` needed for accessing `BufWriter`'s implementation of the trait's methods?
+// @todo Why is importing `BufWriter` not enough to call its implementation of the `Writer` trait?
+// See: https://github.com/flowreenLZR/rust-cli-book/issues/1
+use std::io::{BufRead, Write};
 
 /// Search for a pattern in a file and display the lines that contain it.
 #[derive(StructOpt)]
@@ -155,6 +158,13 @@ fn main() -> AnyhowResult<()> {
     let file = file.with_context(|| error_message)?;
     let buf_reader = std::io::BufReader::new(file);
 
+    // @todo Write to stdout from multiple threads. Stdout::write does not lock.
+    // @todo Does `println!` lock?
+    // See: https://github.com/flowreenLZR/rust-cli-book/issues/3
+    let stdout = std::io::stdout();
+    let mut buf_writer = std::io::BufWriter::new(stdout);
+
+    let mut match_index = 0;
     for line in buf_reader.lines() {
         // ^Option7
         // let line = line?;
@@ -169,9 +179,16 @@ fn main() -> AnyhowResult<()> {
         let line = line.with_context(|| format!("Could not read line from file!"))?;
 
         if line.contains(&args.pattern) {
-            println!("{}", line);
+            write!(buf_writer, "Match {}: {}", match_index, line)?;
+            match_index += 1;
         }
     }
+    // Although "BufWriter" calls "flush" when it's dropped, it's better to manually call it.
+    // The reason for this is that if there are any errors during the dropping, they will be
+    // ignored. Also, if the buffer is empty, the flush will not be performed.
+    // @todo Test the attempt flush on drop behaviour.
+    // See: https://github.com/flowreenLZR/rust-cli-book/issues/2
+    buf_writer.flush()?;
 
     // Required for Option 5/6.
     Ok(())
