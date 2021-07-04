@@ -162,7 +162,8 @@ fn main() -> AnyhowResult<()> {
     #[allow(unused_mut)]
     {
         // @todo Write to stdout from multiple threads. Stdout::write does not lock.
-        // @todo Does `println!` lock?
+        // @todo Does `println!` lock? Test with long prints from different threads.
+        // @todo Does Writer::write return error if another thread accesses the same object?
         // See: https://github.com/flowreenLZR/rust-cli-book/issues/3
         let stdout = std::io::stdout();
         let mut buf_writer = std::io::BufWriter::new(stdout);
@@ -175,6 +176,7 @@ fn main() -> AnyhowResult<()> {
     // threads.
     // Creating the lock and the buffered writer inside the for loop does not seem to
     // make any sense because I don't see how that would make a difference.
+    // @todo Create custom `BufferedStdout` that locks when flushing the internal buffer.
     let stdout_lock = stdout.lock();
     let mut buf_writer = std::io::BufWriter::new(stdout_lock);
 
