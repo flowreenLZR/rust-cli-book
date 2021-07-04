@@ -147,8 +147,12 @@ fn main() -> AnyhowResult<()> {
     // also applies to "std::io::Result".
     // This made me realize how cool Rust's Trait system is compared to C++'s inheritance system.
     // The trait system in rust is similar to the "extension" feature of C# in a way.
-    let file = file.with_context(
-        || format!("Optoin 8: could not open file: {:?}!", args.path))?;
+
+    let error_message = format!("Optoin 8: could not open file: {:?}!", args.path);
+    // This will return an ANSIString that, when it's Display-ed, surrounds the text
+    // with the required ANSI sequence that would make it red.
+    let error_message = ansi_term::Colour::Red.paint(error_message);
+    let file = file.with_context(|| error_message)?;
     let buf_reader = std::io::BufReader::new(file);
 
     for line in buf_reader.lines() {
