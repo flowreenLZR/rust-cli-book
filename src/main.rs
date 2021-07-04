@@ -158,11 +158,25 @@ fn main() -> AnyhowResult<()> {
     let file = file.with_context(|| error_message)?;
     let buf_reader = std::io::BufReader::new(file);
 
-    // @todo Write to stdout from multiple threads. Stdout::write does not lock.
-    // @todo Does `println!` lock?
-    // See: https://github.com/flowreenLZR/rust-cli-book/issues/3
+    #[allow(unused_variables)]
+    #[allow(unused_mut)]
+    {
+        // @todo Write to stdout from multiple threads. Stdout::write does not lock.
+        // @todo Does `println!` lock?
+        // See: https://github.com/flowreenLZR/rust-cli-book/issues/3
+        let stdout = std::io::stdout();
+        let mut buf_writer = std::io::BufWriter::new(stdout);
+    }
+    // let stdout = std::io::stdout().lock(); // Error: lock does not consume the Stdout
+        // object. Because of that, it needs to stay alive.
     let stdout = std::io::stdout();
-    let mut buf_writer = std::io::BufWriter::new(stdout);
+    // Is it OK to lock here if the `for` loop might take a long time to finish?
+    // One reason might be that the output of the `for` loop will not be interrupted by other
+    // threads.
+    // Creating the lock and the buffered writer inside the for loop does not seem to
+    // make any sense because I don't see how that would make a difference.
+    let stdout_lock = stdout.lock();
+    let mut buf_writer = std::io::BufWriter::new(stdout_lock);
 
     let mut match_index = 0;
     for line in buf_reader.lines() {
@@ -179,7 +193,7 @@ fn main() -> AnyhowResult<()> {
         let line = line.with_context(|| format!("Could not read line from file!"))?;
 
         if line.contains(&args.pattern) {
-            write!(buf_writer, "Match {}: {}", match_index, line)?;
+            write!(buf_writer, "Match {}: {}\n", match_index, line)?;
             match_index += 1;
         }
     }
